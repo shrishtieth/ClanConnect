@@ -1732,31 +1732,47 @@ contract ClanConnect is ERC1155, Ownable, ReentrancyGuard{
     emit NameEdited(id, _eventName);
     }
 
-    function stopEvent(uint256 id) external{
+    function updateEvent(uint256 id, bool success) external{
         
        require(isAdmin[msg.sender] == true || idToEvent[id].creator == msg.sender,
        "Only Admins can change supply");
+       if(success){
+   
+           idToEvent[id].isHosted = true;
+
+       }
+       else{
        idToEvent[id].isCancelled = true;
        uint256 price = idToEvent[id].price;
        HolderInfo[] memory info = getAllHoldersWithoutAdmin(id);
        for(uint256 i =0; i< info.length; i++){
           payable(info[i].user).transfer(price*info[i].numberOfTokens);
        }
+       }
 
 
     }
 
-    function hostEvent(uint256 id) external{
+     receive() external payable {}
 
-       require(isAdmin[msg.sender] == true || idToEvent[id].creator == msg.sender,
-       "Only Admins can change supply");
-       idToEvent[id].isHosted = true;
-       
-    }
 
     function updateReRun(uint256 id, uint256 numberOfReruns) external{
        require(isAdmin[msg.sender] == true, "Only Admins can change name");
        idToEvent[id].reRuns = numberOfReruns;
+
+    }
+
+    function claimNft(uint256 id, address admin, uint256 amount, 
+    uint256 nonce, bytes memory signature) external{
+
+        require(!usedNonce[nonce], "Nonce used");
+        require(
+            isValidData(nonce, signature) == true,
+            "Not allowed to buy"
+        );
+        usedNonce[nonce] = true; 
+
+        IERC1155(address(this)).safeTransferFrom(admin, msg.sender, id, amount, "");
 
     }
 
@@ -1788,28 +1804,11 @@ contract ClanConnect is ERC1155, Ownable, ReentrancyGuard{
     }
 
 
-
-    function claimRefundForEvent(uint256 id,  uint256 nonce, bytes memory signature) external{
-        require(idToEvent[id].isHosted == false, "Event Has been hosted");
-
-        uint256 amount = balanceOf(msg.sender,id)*idToEvent[id].price;
-
-        require(!usedNonce[nonce], "Nonce used");
-        require(
-            isValidDataAmount(nonce, msg.sender, amount, signature) == true,
-            "Not allowed to buy"
-        ); 
-        usedNonce[nonce] = true;
-
-        
-        payable(msg.sender).transfer(amount);
-    }
-
     function claimById(uint256 id, uint256 amount, uint256 nonce, bytes memory signature ) external{
 
       require(!usedNonce[nonce], "Nonce used");
         require(
-            isValidDataAmount(nonce, msg.sender, amount, signature) == true,
+            isValidData(nonce, signature) == true,
             "Not allowed to buy"
         ); 
         usedNonce[nonce] = true;
@@ -1820,15 +1819,8 @@ contract ClanConnect is ERC1155, Ownable, ReentrancyGuard{
 
     }
 
-
      function isValidData(uint256 _number, bytes memory sig) public view returns(bool){
        bytes32 message = keccak256(abi.encodePacked(_number));
-       return (recoverSigner(message, sig) == signer);
-   }
-
-   function isValidDataAmount(uint256 _number, address user, 
-   uint256 amount, bytes memory sig) public view returns(bool){
-       bytes32 message = keccak256(abi.encodePacked(_number, amount, user));
        return (recoverSigner(message, sig) == signer);
    }
 
@@ -2016,7 +2008,7 @@ contract ClanConnect is ERC1155, Ownable, ReentrancyGuard{
         _uri[tokenId] = _tokenURI;
     }
     
-  function withdrawFunds(address wallet) external onlyOwner{
+    function withdrawFunds(address wallet) external onlyOwner{
         uint256 balanceOfContract = address(this).balance;
         payable(wallet).transfer(balanceOfContract);
     }

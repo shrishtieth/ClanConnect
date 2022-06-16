@@ -1815,10 +1815,9 @@ contract ClanConnect is ERC1155, Ownable, ReentrancyGuard{
         usedNonce[nonce] = true;
       
       payable(msg.sender).transfer(amount);
-      eventToClaimedReward[id][msg.sender]= amount;
+      eventToClaimedReward[id][msg.sender]= eventToClaimedReward[id][msg.sender] + amount;
       claimedAmount[msg.sender] = claimedAmount[msg.sender] + amount;
-      eventToReRunReward[id][msg.sender]= 0;
-      userReRunReward[msg.sender] = userReRunReward[msg.sender]- amount;
+
     }
 
 

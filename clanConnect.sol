@@ -1744,9 +1744,11 @@ contract ClanConnect is ERC1155, Ownable, ReentrancyGuard{
        else{
        idToEvent[id].isCancelled = true;
        uint256 price = idToEvent[id].price;
-       HolderInfo[] memory info = getAllHoldersWithoutAdmin(id);
-       for(uint256 i =0; i< info.length; i++){
-          payable(info[i].user).transfer(price*info[i].numberOfTokens);
+       (,uint256 length)  = getAllHoldersWithoutAdmin(id);
+       HolderInfo[] memory holders = new HolderInfo[](length);
+       (holders ,)= getAllHoldersWithoutAdmin(id);
+       for(uint256 i =0; i< length; i++){
+          payable(holders[i].user).transfer(price*holders[i].numberOfTokens);
        }
        }
 
@@ -1975,7 +1977,7 @@ contract ClanConnect is ERC1155, Ownable, ReentrancyGuard{
 
     }
 
-    function getAllHoldersWithoutAdmin(uint256 id) public view returns(HolderInfo[] memory info){
+    function getAllHoldersWithoutAdmin(uint256 id) public view returns(HolderInfo[] memory info, uint256 length){
         uint256 count = 0;
         uint256 totalHolders = ownerList.length;
            for(uint256 j=0; j<totalHolders;j++){
@@ -1994,7 +1996,7 @@ contract ClanConnect is ERC1155, Ownable, ReentrancyGuard{
                   number++;
               }  
            }
-    return(userInfo); 
+    return(userInfo, userInfo.length); 
 
     }
 
